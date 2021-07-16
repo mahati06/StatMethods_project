@@ -1,0 +1,43 @@
+library("readxl")
+happiness.data <- read_excel("Happiness Project Data Set.xlsx")
+warnings(happiness.data)
+
+
+View(happiness.data)
+
+happiness.data$newScore <- 1
+
+for(i in 1:length(happiness.data$newScore)){
+  
+  if(happiness.data$happy[i] == "not too") {
+    
+    happiness.data$newScore[i] <- 0
+    
+  }
+  
+}
+
+happy.regress <- glm(newScore ~ as.factor(educ) + as.factor(babies) + teens + mothfath16 + black + female, family = "binomial", data = happiness.data)
+summary(happy.regress)
+
+happiness.data$educ.new <- as.factor(happiness.data$educ)
+
+
+happy.regress <- glm(newScore ~ as.numeric(educ) + as.numeric(babies) + teens + mothfath16 + black + female, family = "binomial", data = happiness.data)
+summary(happy.regress)
+
+AIC(happy.regress)
+
+library(ROCR)
+
+pred <- prediction(happy.regress$fitted.values, happy.regress$y)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+
+plot(perf, colorize = T)
+abline(a = 1, b = -1)
+
+auc.tmp <- performance(pred, "auc")
+auc <- as.numeric(auc.tmp@y.values)
+
+library(ResourceSelection)
+hl.test <- hoslem.test(happy.regress$y, happy.regress$fitted.values, g = 10)
